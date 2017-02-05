@@ -194,10 +194,10 @@ prepare_target_nodes() {
 	done
 }
 
-#fabric_space
-#vlan_dhcp
-#create_tags
+fabric_space
+vlan_dhcp
+create_tags
 nodes_networks
-#lvm_volume_groups
-#lvm_logical_volumes
-#prepare_target_nodes
+lvm_volume_groups
+lvm_logical_volumes
+prepare_target_nodes

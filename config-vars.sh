@@ -29,13 +29,6 @@ openstack_bridges_list="br-mgmt:10 br-storage:20"
 deployment_node_packages="aptitude build-essential git ntp ntpdate openssh-server python-dev sudo bridge-utils tcpdump vlan jq bc prips"
 target_nodes_packages="python bridge-utils debootstrap ifenslave ifenslave-2.6 lsof lvm2 ntp ntpdate openssh-server sudo tcpdump vlan"
 compute_net_conf="
-auto br-vlan
-iface br-vlan inet manual
-        bridge_stp off
-        bridge_waitport 0
-        bridge_fd 0
-        bridge_ports bond0 p_prv p_floating
-
 auto p_prv
 allow-br-prv p_prv
 iface p_prv inet manual
@@ -49,16 +42,6 @@ iface p_floating inet manual
 	ovs_type OVSIntPort
 	mtu 65000
 	ovs_bridge br-floating
-
-source /etc/network/interfaces.d/*.cfg
-"
-infra_net_conf="
-auto br-vlan
-iface br-vlan inet manual
-        bridge_stp off
-        bridge_waitport 0
-        bridge_fd 0
-        bridge_ports bond0
 
 source /etc/network/interfaces.d/*.cfg
 "
