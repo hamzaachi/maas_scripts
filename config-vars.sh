@@ -5,7 +5,7 @@ declare -A maas_volume_groups_list maas_logical_volumes_list
 ######################## Login Info #############################
 maas_profile="maasadmin"
 maas_api_server="http://172.16.1.1:5240/MAAS"
-maas_api_key="AX7VkBBGnPnV6fXFbN:hqZBFSyRnMBV5n2vaW:kTpsGYD7Rk5WfrP5hGZrHy9WpTunryYs"
+maas_api_key=$(maas-region apikey --username=$maas_profile)
 maas_login_cmd="maas login $maas_profile $maas_api_server $maas_api_key"
 
 ####################### MAAS Global Settings ####################
