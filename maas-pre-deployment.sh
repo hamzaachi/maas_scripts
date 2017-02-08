@@ -9,7 +9,7 @@ source config-vars.sh
 ### login
 $maas_login_cmd &>/dev/null
 
-infra_hosts=$(maas $maas_profile tag nodes ${maas_tags_list[0]}|jq -r .[].hostname)
+#infra_hosts=$(maas $maas_profile tag nodes ${maas_tags_list[0]}|jq -r .[].hostname)
 ##############
 function pool_limit() {
 	local subnet=$(echo "$1"|awk -F'/' '{print $1}')
