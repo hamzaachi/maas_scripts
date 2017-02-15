@@ -118,7 +118,18 @@ function vlan_dhcp() {
 	echo "IPS_MGMT_POOL=\"${IPS_MGMT_POOL[@]}\"">/tmp/mgmt
 	echo "IPS_STRG_POOL=\"${IPS_STRG_POOL[@]}\"">/tmp/strg
 }
+###################
 
+function connect_interfaces_to_fabric() {
+	cidr="10.1.0.0/16"
+	for node in $(maas $maas_profile tag nodes ${maas_tags_list[0]}|jq -r .[].hostname); do
+        (system_id=$(maas $maas_profile nodes read|jq -r --arg hostname "$node" '.[] | if .hostname == $hostname then .system_id else empty end')
+       		for interface in ${maas_bd_if[@]}; do
+		if_id=$(maas $maas_profile interfaces read $system_id|jq -r --arg name "$interface" '.[] | if .name == $name then .id else empty end')
+		maas $maas_profile interface link-subnet $system_id $if_id subnet=cidr:$cidr
+      done)&
+      done
+}
 
 ################
 function nodes_networks() {
@@ -153,18 +164,6 @@ function nodes_networks() {
 	done)&
 	i=$((i+1))
      done
-}
-
-###################
-function connect_interfaces_to_fabric() {
-	cidr="10.1.0.0/16"
-	for node in $(maas $maas_profile tag nodes ${maas_tags_list[0]}|jq -r .[].hostname); do
-        (system_id=$(maas $maas_profile nodes read|jq -r --arg hostname "$node" '.[] | if .hostname == $hostname then .system_id else empty end')
-       		for interface in ${maas_bd_if[@]}; do
-		if_id=$(maas $maas_profile interfaces read $system_id|jq -r --arg name "$interface" '.[] | if .name == $name then .id else empty end')
-		maas $maas_profile interface link-subnet $system_id $if_id subnet=cidr:$cidr
-      done)&
-      done
 }
 
 ###################
