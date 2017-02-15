@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 
-## Shell Opts ----------------------------------------------------------------
+## Shell Options ----------------------------------------------------------------
 set -e -u -x
 set -o pipefail
 
@@ -9,7 +9,7 @@ source config-vars.sh
 ### login
 $maas_login_cmd &>/dev/null
 
-infra_hosts=$(maas $maas_profile tag nodes ${maas_tags_list[0]}|jq -r .[].hostname)
+#infra_hosts=$(maas $maas_profile tag nodes ${maas_tags_list[0]}|jq -r .[].hostname)
 ##############
 function pool_limit() {
 	local subnet=$(echo "$1"|awk -F'/' '{print $1}')
@@ -121,16 +121,6 @@ function vlan_dhcp() {
 
 
 ################
-function adjust_network_interfaces() {
-	for node in $(maas $maas_profile tag nodes ${maas_tags_list[0]}|jq -r .[].hostname); do
-        (system_id=$(maas $maas_profile nodes read|jq -r --arg hostname "$node" '.[] | if .hostname == $hostname then .system_id else empty end')
-       for interface in ${maas_bd_if[@]}; do
-		if_id=$(maas $maas_profile interfaces read $system_id|jq -r --arg name "$interface" '.[] | if .name == $name then .id else empty end')
-		maas $maas_profile interface link-subnet $system_id $if_id subnet=cidr:$cidr mode=.....
-      done)&
-      done
-}
-################
 function nodes_networks() {
 	local i=1
 	source /tmp/mgmt && source /tmp/strg
@@ -141,7 +131,6 @@ function nodes_networks() {
 	(system_id=$(maas $maas_profile nodes read|jq -r --arg hostname "$node" '.[] | if .hostname == $hostname then .system_id else empty end')
 	parents=($(maas $maas_profile interfaces read $system_id| jq -r --arg if1 "${maas_bd_if[0]}" --arg if2 "${maas_bd_if[1]}" --arg if3 "${maas_bd_if[2]}" '.[]| if .name == $if1 or .name == $if2 or .name == $if3 then .id else empty end'))
 	maas $maas_profile interfaces create-bond $system_id name=bond0  parents=${parents[0]} parents=${parents[1]} parents=${parents[2]}  bond_mode=802.3ad bond_lacp_rate=slow bond_xmit_hash_policy=layer3+4
-#	maas $maas_profile interfaces create-bond $system_id name=bond0  parents=${parents[0]} parents=${parents[1]} parents=${parents[2]}  bond_mode=active-backup
 	for var in $openstack_bridges_list; do
 	    bridge=$(echo $var|cut -d':' -f1)
 	    vlan=$(echo $var|cut -d':' -f2)
@@ -166,13 +155,19 @@ function nodes_networks() {
      done
 }
 
-prepare_deployment_node() {
-	apt install -y $deployment_node_packages
-	echo 'bonding' >> /etc/modules
-	echo '8021q' >> /etc/modules
-
+###################
+function connect_interfaces_to_fabric() {
+	cidr="10.1.0.0/16"
+	for node in $(maas $maas_profile tag nodes ${maas_tags_list[0]}|jq -r .[].hostname); do
+        (system_id=$(maas $maas_profile nodes read|jq -r --arg hostname "$node" '.[] | if .hostname == $hostname then .system_id else empty end')
+       		for interface in ${maas_bd_if[@]}; do
+		if_id=$(maas $maas_profile interfaces read $system_id|jq -r --arg name "$interface" '.[] | if .name == $name then .id else empty end')
+		maas $maas_profile interface link-subnet $system_id $if_id subnet=cidr:$cidr
+      done)&
+      done
 }
 
+###################
 prepare_target_nodes() {
 	for node in $maas_nodes_list ; do
 	    (ssh -o StrictHostKeyChecking=no ubuntu@$node "
@@ -180,7 +175,7 @@ prepare_target_nodes() {
 		sudo apt install -y $target_nodes_packages
 		sudo sed -i  's/^\(#\)\?PermitRootLogin.*/PermitRootLogin yes/g' /etc/ssh/sshd_config
 		sudo systemctl restart sshd
-#		sudo sed -i 's/source .*//'  /etc/network/interfaces
+                echo "root:$root_passwork"|sudo chpasswd
 		sudo chmod 666 /etc/network/interfaces
 		if echo "$infra_hosts" | grep -q "$node" ; then
 			echo 'nothing to do for now'
@@ -194,10 +189,11 @@ prepare_target_nodes() {
 	done
 }
 
-fabric_space
-vlan_dhcp
-create_tags
-nodes_networks
-lvm_volume_groups
-lvm_logical_volumes
-prepare_target_nodes
+#fabric_space
+#vlan_dhcp
+#create_tags
+#connect_interfaces_to_fabric
+#nodes_networks
+#lvm_volume_groups
+#lvm_logical_volumes
+#prepare_target_nodes
